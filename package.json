@@ -1,0 +1,25 @@
+{
+  "name": "localbird-tic-tac-toe",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "server",
+    "client"
+  ],
+  "scripts": {
+    "dev": "concurrently -n server,client -c blue,green \"npm run dev -w @localbird/server\" \"npm run dev -w @localbird/client\"",
+    "dev:server": "npm run dev -w @localbird/server",
+    "dev:client": "npm run dev -w @localbird/client",
+    "build": "npm run build -w @localbird/client",
+    "start": "npm run start -w @localbird/server",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.21",
+    "concurrently": "^9.2.0",
+    "tsx": "^4.20.3",
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.1"
+  }
+}
