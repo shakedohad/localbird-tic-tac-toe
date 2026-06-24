@@ -44,6 +44,7 @@ export function useGameSocket(gameId: string): UseGameSocketResult {
   const pingTimerRef = useRef<number | null>(null);
   const handshakeSentRef = useRef(false);
   const supersededRef = useRef(false);
+  const fatalRef = useRef(false);
 
   const send = useCallback((message: ClientMessage) => {
     const socket = wsRef.current;
@@ -133,10 +134,21 @@ export function useGameSocket(gameId: string): UseGameSocketResult {
           break;
         case 'error':
           setError(message.message);
-          if (!message.recoverable && message.code === 'INVALID_SEAT_TOKEN') {
+          if (message.code === 'INVALID_SEAT_TOKEN') {
+            // Stored seat is no longer valid (e.g. the seat was reassigned).
+            // Drop it and retry the handshake as a fresh participant.
             clearSeatToken(gameId);
             handshakeSentRef.current = false;
             send({ type: 'join', gameId });
+          } else if (message.code === 'GAME_NOT_FOUND' || message.code === 'GAME_EXPIRED') {
+            // The game is gone; neither reconnecting nor rejoining can recover
+            // it. Drop the stale token and stop the reconnect loop instead of
+            // getting stuck retrying a handshake that can never succeed.
+            clearSeatToken(gameId);
+            fatalRef.current = true;
+            setStatus('ended');
+            clearPingTimer();
+            wsRef.current?.close();
           }
           break;
         case 'superseded':
@@ -191,7 +203,7 @@ export function useGameSocket(gameId: string): UseGameSocketResult {
 
       socket.addEventListener('close', () => {
         clearPingTimer();
-        if (!isActive(generation) || supersededRef.current) {
+        if (!isActive(generation) || supersededRef.current || fatalRef.current) {
           return;
         }
         scheduleReconnect();

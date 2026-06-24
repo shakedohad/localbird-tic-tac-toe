@@ -3,4 +3,5 @@ dist/
 client/node_modules/
 client/dist/
 data/
+server/data/
 *.log

@@ -35,14 +35,6 @@ export interface ErrorMessage {
   recoverable: boolean;
 }
 
-export interface PresenceMessage {
-  type: 'presence';
-  players: {
-    X: { connected: boolean; displayName: string | null };
-    O: { connected: boolean; displayName: string | null };
-  };
-}
-
 export interface PongMessage {
   type: 'pong';
 }
@@ -56,6 +48,5 @@ export type ServerMessage =
   | JoinedMessage
   | GameStateMessage
   | ErrorMessage
-  | PresenceMessage
   | PongMessage
   | SupersededMessage;

@@ -6,13 +6,11 @@ export type {
   GameStateMessage,
   JoinedMessage,
   PongMessage,
-  PresenceMessage,
   ProtocolErrorCode,
   ServerMessage,
   SupersededMessage,
 } from './messages.js';
 export type {
-  PresencePayload,
   PublicGameState,
   PublicSeat,
 } from './public-state.js';

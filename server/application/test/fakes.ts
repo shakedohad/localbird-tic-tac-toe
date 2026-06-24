@@ -4,7 +4,7 @@ import type { GameBroadcaster } from '../../contracts/index.js';
 import type { GameRepository } from '../../contracts/index.js';
 import type { IdGenerator } from '../../contracts/index.js';
 import type { ServerMessage } from '../../contracts/index.js';
-import type { PresencePayload, PublicGameState } from '../../contracts/index.js';
+import type { PublicGameState } from '../../contracts/index.js';
 import type { TokenGenerator } from '../../contracts/index.js';
 import type { GameState } from '../../domain/index.js';
 
@@ -47,15 +47,10 @@ export class InMemoryGameRepository implements GameRepository {
 
 export class RecordingBroadcaster implements GameBroadcaster {
   readonly gameStates: Array<{ gameId: string; state: PublicGameState }> = [];
-  readonly presence: Array<{ gameId: string; payload: PresencePayload }> = [];
   readonly direct: Array<{ connectionId: string; message: ServerMessage }> = [];
 
   broadcastGameState(gameId: string, state: PublicGameState): void {
     this.gameStates.push({ gameId, state: structuredClone(state) });
-  }
-
-  broadcastPresence(gameId: string, payload: PresencePayload): void {
-    this.presence.push({ gameId, payload: structuredClone(payload) });
   }
 
   sendToConnection(connectionId: string, message: ServerMessage): void {

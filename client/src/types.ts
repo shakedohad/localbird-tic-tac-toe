@@ -85,6 +85,7 @@ export type ConnectionStatus =
   | 'connected'
   | 'reconnecting'
   | 'disconnected'
-  | 'superseded';
+  | 'superseded'
+  | 'ended';
 
 export type PlayerRole = 'player' | 'spectator';

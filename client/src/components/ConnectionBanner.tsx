@@ -6,6 +6,7 @@ const LABELS: Record<ConnectionStatus, string> = {
   reconnecting: 'Reconnecting…',
   disconnected: 'Disconnected',
   superseded: 'Active in another tab',
+  ended: 'This game is no longer available',
 };
 
 const VARIANTS: Record<ConnectionStatus, string> = {
@@ -14,6 +15,7 @@ const VARIANTS: Record<ConnectionStatus, string> = {
   reconnecting: 'banner-warning',
   disconnected: 'banner-warning',
   superseded: 'banner-error',
+  ended: 'banner-error',
 };
 
 interface ConnectionBannerProps {

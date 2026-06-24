@@ -20,10 +20,3 @@ export interface PublicGameState {
     O: PublicSeat | null;
   };
 }
-
-export interface PresencePayload {
-  players: {
-    X: PublicSeat;
-    O: PublicSeat;
-  };
-}

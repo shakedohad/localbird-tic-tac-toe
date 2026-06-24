@@ -47,6 +47,7 @@ export class GameService {
   private readonly clock: () => string;
   private readonly config: GameServiceConfig;
   private readonly connections = new ConnectionRegistry();
+  private readonly gameLocks = new Map<string, Promise<unknown>>();
 
   constructor(deps: GameServiceDeps) {
     this.repository = deps.repository;
@@ -70,6 +71,14 @@ export class GameService {
     connectionId: string;
     displayName?: string;
   }): Promise<JoinResult> {
+    return this.withGameLock(params.gameId, () => this.joinLocked(params));
+  }
+
+  private async joinLocked(params: {
+    gameId: string;
+    connectionId: string;
+    displayName?: string;
+  }): Promise<JoinResult> {
     const state = await this.requireGame(params.gameId);
 
     if (state.players.X === null) {
@@ -82,15 +91,24 @@ export class GameService {
 
     return {
       kind: 'spectator',
-      game: (await this.watch({
+      game: this.watchLocked({
         gameId: params.gameId,
         connectionId: params.connectionId,
         displayName: params.displayName,
-      })).game,
+        state,
+      }).game,
     };
   }
 
   async reconnect(params: {
+    gameId: string;
+    seatToken: string;
+    connectionId: string;
+  }): Promise<ReconnectResult> {
+    return this.withGameLock(params.gameId, () => this.reconnectLocked(params));
+  }
+
+  private async reconnectLocked(params: {
     gameId: string;
     seatToken: string;
     connectionId: string;
@@ -122,7 +140,18 @@ export class GameService {
     connectionId: string;
     displayName?: string;
   }): Promise<WatchResult> {
-    const state = await this.requireGame(params.gameId);
+    return this.withGameLock(params.gameId, async () => {
+      const state = await this.requireGame(params.gameId);
+      return this.watchLocked({ ...params, state });
+    });
+  }
+
+  private watchLocked(params: {
+    gameId: string;
+    connectionId: string;
+    displayName?: string;
+    state: GameState;
+  }): WatchResult {
     this.assertSpectatorCapacity(params.gameId);
 
     this.connections.register(params.connectionId, {
@@ -130,10 +159,18 @@ export class GameService {
       gameId: params.gameId,
     });
 
-    return { game: toPublicGameState(state) };
+    return { game: toPublicGameState(params.state) };
   }
 
   async applyMove(params: {
+    gameId: string;
+    seat: Symbol;
+    index: number;
+  }): Promise<PublicGameState> {
+    return this.withGameLock(params.gameId, () => this.applyMoveLocked(params));
+  }
+
+  private async applyMoveLocked(params: {
     gameId: string;
     seat: Symbol;
     index: number;
@@ -158,13 +195,15 @@ export class GameService {
       return;
     }
 
-    const state = await this.repository.findById(entry.gameId);
-    if (state === null) {
-      return;
-    }
+    await this.withGameLock(entry.gameId, async () => {
+      const state = await this.repository.findById(entry.gameId);
+      if (state === null) {
+        return;
+      }
 
-    const next = setSeatConnected(state, entry.seat, false, this.clock());
-    await this.persistAndBroadcast(entry.gameId, next);
+      const next = setSeatConnected(state, entry.seat, false, this.clock());
+      await this.persistAndBroadcast(entry.gameId, next);
+    });
   }
 
   async purgeExpiredGames(olderThanMs: number, batchSize: number): Promise<string[]> {
@@ -275,6 +314,27 @@ export class GameService {
       }
     }
     return null;
+  }
+
+  /**
+   * Serializes state mutations per game so concurrent reconnect/move/disconnect
+   * handlers cannot interleave their read-modify-write cycles and clobber each
+   * other (the repository save is a blind upsert with no version check).
+   */
+  private withGameLock<T>(gameId: string, action: () => Promise<T>): Promise<T> {
+    const previous = this.gameLocks.get(gameId) ?? Promise.resolve();
+    const result = previous.then(action, action);
+    const tail = result.then(
+      () => undefined,
+      () => undefined,
+    );
+    this.gameLocks.set(gameId, tail);
+    void tail.then(() => {
+      if (this.gameLocks.get(gameId) === tail) {
+        this.gameLocks.delete(gameId);
+      }
+    });
+    return result;
   }
 
   private async persistAndBroadcast(gameId: string, state: GameState): Promise<void> {
