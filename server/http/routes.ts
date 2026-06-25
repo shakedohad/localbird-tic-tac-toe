@@ -4,6 +4,7 @@ import type { GameRepository } from '../contracts/index.js';
 import type { ServerConfig } from '../config.js';
 import type { ConnectionManager } from '../ws/connection-manager.js';
 import { SlidingWindowRateLimiter } from './rate-limiter.js';
+import { isClientDistAvailable } from './static.js';
 
 export async function registerHttpRoutes(
   fastify: FastifyInstance,
@@ -21,6 +22,9 @@ export async function registerHttpRoutes(
 
   fastify.get('/health', async () => ({
     ok: true,
+    client: {
+      available: isClientDistAvailable(),
+    },
     connections: deps.connections.getStats(),
     games: {
       stored: await deps.repository.count(),

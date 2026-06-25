@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build"
+    "build": "vite build",
+    "start": "node -e \"console.error('\\nDo not deploy client/ as its own Railway service.\\nDeploy the repo root instead — npm run build && npm start serves client/dist from the server.\\n'); process.exit(1)\""
   },
   "dependencies": {
     "react": "^19.1.0",

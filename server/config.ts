@@ -50,6 +50,19 @@ function readOptionalInt(name: string): number | null {
   return value;
 }
 
+function resolvePublicBaseUrl(port: number): string {
+  if (process.env.PUBLIC_BASE_URL !== undefined && process.env.PUBLIC_BASE_URL.trim() !== '') {
+    return process.env.PUBLIC_BASE_URL.replace(/\/$/, '');
+  }
+
+  const railwayDomain = process.env.RAILWAY_PUBLIC_DOMAIN;
+  if (railwayDomain !== undefined && railwayDomain.trim() !== '') {
+    return `https://${railwayDomain.replace(/\/$/, '')}`;
+  }
+
+  return `http://localhost:${port}`;
+}
+
 function readDisconnectPolicy(): GameServiceConfig['disconnectPolicy'] {
   const raw = process.env.DISCONNECT_POLICY ?? 'continue';
   if (raw === 'continue' || raw === 'pause') {
@@ -63,7 +76,7 @@ export function loadConfig(): ServerConfig {
   const port = readInt('PORT', 3000);
   const host = process.env.HOST ?? '0.0.0.0';
   const databasePath = process.env.DATABASE_PATH ?? './data/games.db';
-  const publicBaseUrl = process.env.PUBLIC_BASE_URL ?? `http://localhost:${port}`;
+  const publicBaseUrl = resolvePublicBaseUrl(port);
 
   mkdirSync(dirname(databasePath), { recursive: true });
 

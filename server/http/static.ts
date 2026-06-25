@@ -1,10 +1,21 @@
 import { existsSync } from 'node:fs';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import fastifyStatic from '@fastify/static';
 import type { FastifyInstance } from 'fastify';
 
+/** Repo root — stable even when process.cwd() is server/ (e.g. some deploy configs). */
+export function getClientDistPath(): string {
+  const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
+  return join(repoRoot, 'client', 'dist');
+}
+
+export function isClientDistAvailable(): boolean {
+  return existsSync(getClientDistPath());
+}
+
 export async function registerClientStatic(fastify: FastifyInstance): Promise<boolean> {
-  const clientDist = join(process.cwd(), 'client', 'dist');
+  const clientDist = getClientDistPath();
 
   if (!existsSync(clientDist)) {
     return false;

@@ -5,7 +5,7 @@ import { GameService } from './application/index.js';
 import type { ServerConfig } from './config.js';
 import { startCleanupScheduler } from './cleanup/cleanup-scheduler.js';
 import { registerHttpRoutes } from './http/routes.js';
-import { registerClientStatic } from './http/static.js';
+import { registerClientStatic, getClientDistPath } from './http/static.js';
 import { CryptoIdGenerator } from './id-generator.js';
 import { SqliteGameRepository } from './persistence/sqlite-game-repository.js';
 import { CryptoTokenGenerator } from './token-generator.js';
@@ -99,7 +99,12 @@ export async function createApp(config: ServerConfig): Promise<AppContext> {
 
   const clientEnabled = await registerClientStatic(fastify);
   if (clientEnabled) {
-    fastify.log.info('Serving client from client/dist');
+    fastify.log.info({ path: getClientDistPath() }, 'Serving client static assets');
+  } else {
+    fastify.log.warn(
+      { path: getClientDistPath() },
+      'Client UI not available — run npm run build at repo root before npm start',
+    );
   }
 
   return { fastify, gameService, repository, connections, stopCleanup };

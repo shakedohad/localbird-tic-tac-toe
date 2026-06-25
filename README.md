@@ -14,11 +14,16 @@ Open [http://localhost:5173](http://localhost:5173). The Vite dev server proxies
 **Production**
 
 ```bash
-npm run build
-npm start
+npm run prod
 ```
 
 Open [http://localhost:3000](http://localhost:3000).
+
+**Deploy on Railway**
+
+Live: [localbirdserver-production.up.railway.app](https://localbirdserver-production.up.railway.app/)
+
+Use **one service** at the repo root (`.`). Build: `npm run build`. Start: `npm start`. Open the public URL without `:8080` — Railway routes HTTPS to the container’s `PORT` internally.
 
 **Tests**
 
